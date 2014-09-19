@@ -21,13 +21,14 @@ If you want to use this lib with nova you should do follow steps:
    * Go to the init block of class *WSGIService*
    * Replace line
 
+
     self.app = self.loader.load_app(name)
 
 with
 
     loaded_app = self.loader.load_app(name)
     dir_path = '/path/to/dir/with/reports/' # This dir should exist
-    wsgi_app = sqltap.wsgi.SQLTapMiddleware(loaded_app)
+    wsgi_app = sqltap.wsgi.SQLTapMiddleware(loaded_app, dir_path)
     self.app = wsgi_app
 
    * Run nova-api
