@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+import os
+import time
 
 try:
     import urllib.parse as urlparse
@@ -24,20 +26,45 @@ class SQLTapMiddleware(object):
     :param path: A path prefix for access. Default is `'/__sqltap__'`
     """
 
-    def __init__(self, app, path='/__sqltap__'):
+    def __init__(self, app, path='/__sqltap__', dir_name='/home/nik/myprofiler/'):
         self.app = app
         self.path = path.rstrip('/')
-        self.on = False
-        self.collector = queue.Queue(0)
+        self.dir_name = dir_name
+        self.on = True
         self.stats = []
-        self.profiler = sqltap.ProfilingSession(collect_fn=self.collector.put)
 
     def __call__(self, environ, start_response):
         path = environ.get('PATH_INFO', '')
         if path == self.path or path == self.path + '/':
             return self.render(environ, start_response)
-        return self.app(environ, start_response)
-    
+
+        def user_context_fn(*args):
+            return "%s %s" % (environ['REQUEST_METHOD'], environ['PATH_INFO'])
+
+        self.p = sqltap.ProfilingSession(user_context_fn=user_context_fn)
+
+        self.p.start()
+        res = self.app(environ, start_response)
+        self.p.stop()
+
+        stats = self.p.collect()
+        total_time = 0.0
+
+        for s in stats:
+            total_time += s.duration
+
+        prof_filename = os.path.join(self.dir_name,
+                    '%06dms.%s.%s.%d.html' % (
+                total_time * 1000.0,
+                environ['REQUEST_METHOD'],
+                environ.get('PATH_INFO').strip('/').replace('/', '.') or 'root',
+                time.time()
+            ))
+
+        self.stats = stats
+        sqltap.report(stats, prof_filename, "report.mako")
+        return res
+
     def start(self):
         if not self.on:
             self.on = True
@@ -78,12 +105,6 @@ class SQLTapMiddleware(object):
                 self.start()
             else:
                 self.stop()
-
-        try:
-            while True:
-                self.stats.append(self.collector.get(block=False))
-        except queue.Empty:
-            pass
 
         return self.render_response(start_response)
 

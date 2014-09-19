@@ -10,7 +10,7 @@
     <title>sqltap profile report</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- syntax highlighting -->
     <link rel="stylesheet" href="http://yandex.st/highlightjs/8.0/styles/default.min.css">
@@ -50,7 +50,7 @@
       <h1>
       </h1>
       <div class="row">
-        <div class="col-xs-3" id="query-groups" style="min-height: 600px">
+        <div class="col-xs-5" id="query-groups" style="min-height: 600px">
     
           <ul class="nav nav-pills nav-stacked" id="myTabs">
             % for i, group in enumerate(query_groups):
@@ -60,14 +60,14 @@
                 <span class="label label-info pull-right" style="margin-right: 5px">
                   ${len(group.queries)}
                 </span>
-${group.first_word} 
+${group.title}
               </a>
             </li>
           % endfor
           </ul>
 
         </div>
-        <div class="col-xs-9">
+        <div class="col-xs-7">
 
           <div class="tab-content">
             % for i, group in enumerate(query_groups):
@@ -98,34 +98,25 @@ ${group.first_word}
               </h4>
 
               <hr />
-              <pre><code>${group.text}</code></pre>
 
-              <hr />
-              <% stack_count = len(group.stacks) %>
-              <h4>
-                  ${stack_count} unique
-                  % if stack_count == 1:
-                      stack issues
-                  % else:
-                      stacks issue
-                  % endif
-                  this query
-              </h4>
-              <ul class="details">
-                  % for trace, count in group.stacks.items():
-                  <li>
+                % for q in group.queries:
+                    <div>
+                    <span class="label label-warning pull-right">${'%.3f' % q.duration}s</span>
+##                  <li>
                     <a class="toggle">
                       <h5>
-                      <% fr = group.callers[trace] %>
-                      ${count}
-                      ${'call' if count == 1 else 'calls'} from
+                      <% fr = q.caller %>
+##                      ${count}
+                      ${'call' if 1==1 else 'calls'} from
                       <strong>${fr[2]}</strong> @${fr[0].split()[-1]}:${fr[1]}
                       </h5>
                     </a>
-                    <pre class="trace hidden">${trace}</pre>
-                  </li>
-                  % endfor
-              </ul>
+                    <pre class="trace hidden"><code>${q.text}</code></pre>
+##                  </li>
+
+                    </div>
+                % endfor
+
             </div>
             % endfor
           </div>
@@ -133,8 +124,8 @@ ${group.first_word}
     </div><!-- /.container -->
 
 
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
     <script>hljs.initHighlightingOnLoad();</script>
     <script type="text/javascript">
         jQuery(function($) {

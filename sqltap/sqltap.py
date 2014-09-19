@@ -5,6 +5,8 @@ import traceback
 import collections
 import sys
 import os
+import uuid
+
 try:
     import queue
 except ImportError:
@@ -30,11 +32,12 @@ class QueryStats(object):
     :attr user_context: The value returned by the user_context_fn set 
         with :func:`sqltap.start`.
     """
-    def __init__(self, text, stack, duration, user_context):
+    def __init__(self, text, stack, duration, user_context, request_id):
         self.text = text
         self.stack = stack
         self.duration = duration
         self.user_context = user_context
+        self.request_id = request_id
 
 class ProfilingSession(object):
     """ A ProfilingSession captures queries run on an Engine and metadata about them.
@@ -107,6 +110,7 @@ class ProfilingSession(object):
         self.started = False
         self.engine = engine
         self.user_context_fn = user_context_fn
+        self.uuid = uuid.uuid4()
 
         if collect_fn:
             # the user said they want to do their own collecting
@@ -130,13 +134,8 @@ class ProfilingSession(object):
         context = (None if not self.user_context_fn else
                    self.user_context_fn(conn, clause, multiparams, params, results))
 
-        try:
-            text = clause.compile(dialect=conn.engine.dialect)
-        except AttributeError:
-            text = clause
-
         # add the querystats to the collector
-        self.collect_fn(QueryStats(text, traceback.extract_stack()[:-1], duration, context))
+        self.collect_fn(QueryStats(clause, traceback.extract_stack()[:-1], duration, context, self.uuid))
 
     def collect(self):
         """ Return all queries collected by this profiling session so far.
@@ -251,7 +250,8 @@ def report(statistics, filename=None, template="report.mako", **kwargs):
         def add(self, q):
             if not bool(self.queries):
                 self.text = str(q.text)
-                self.first_word = self.text.split()[0]
+                self.title = q.user_context
+            q.caller = self.find_user_fn(q.stack)
             self.queries.append(q)
             self.stacks[q.stack_text] += 1
             self.callers[q.stack_text] = self.find_user_fn(q.stack)
@@ -278,8 +278,7 @@ def report(statistics, filename=None, template="report.mako", **kwargs):
     for qstats in statistics:
         qstats.stack_text = \
                 ''.join(traceback.format_list(qstats.stack)).strip()
-
-        group = query_groups[str(qstats.text)]
+        group = query_groups[str(qstats.request_id)]
         group.add(qstats)
         all_group.add(qstats)
 
