@@ -1,6 +1,4 @@
 from __future__ import absolute_import
-import os
-import time
 
 try:
     import urllib.parse as urlparse
@@ -23,13 +21,14 @@ class SQLTapMiddleware(object):
     path prefix can be set by ``path`` parameter).
 
     :param app: A WSGI application object to be wrap.
+    :param dir_path: A path to the folder with reports.
     :param path: A path prefix for access. Default is `'/__sqltap__'`
     """
 
-    def __init__(self, app, path='/__sqltap__', dir_name='/home/nik/myprofiler/'):
+    def __init__(self, app, dir_path, path='/__sqltap__'):
         self.app = app
         self.path = path.rstrip('/')
-        self.dir_name = dir_name
+        self.dir_path = dir_path
         self.on = True
         self.stats = []
 
@@ -53,7 +52,7 @@ class SQLTapMiddleware(object):
         for s in stats:
             total_time += s.duration
 
-        prof_filename = os.path.join(self.dir_name,
+        prof_filename = os.path.join(self.dir_path,
                     '%06dms.%s.%s.%d.html' % (
                 total_time * 1000.0,
                 environ['REQUEST_METHOD'],
