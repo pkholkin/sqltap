@@ -12,6 +12,28 @@ sqltap helps you quickly understand:
 
 [http://sqltap.inconshreveable.com](http://sqltap.inconshreveable.com)
 
+
+## Integration with Nova
+
+If you want to use this lib with nova you should do follow steps:
+
+   * Go to the nova/service.py
+   * Go to the init block of class *WSGIService*
+   * Replace line
+
+    self.app = self.loader.load_app(name)
+
+with
+
+    loaded_app = self.loader.load_app(name)
+    dir_path = '/path/to/dir/with/reports/' # This dir should exist
+    wsgi_app = sqltap.wsgi.SQLTapMiddleware(loaded_app)
+    self.app = wsgi_app
+
+   * Run nova-api
+
+After that reports for each API request will be saved in the directory that you provided
+
 ## Motivation
 
 When you work at a high level of abstraction, it’s more common for your code to be inefficient and cause performance problems. SQLAlchemy’s ORM is excellent and gives you the flexibility to fix these inefficiencies if you know where to look! sqltap is a library that hooks into SQLAlchemy to collect metrics on all queries you send to your databases. sqltap can help you find where in your application you are generating slow or redundant queries so that you can fix them with minimal effort.
